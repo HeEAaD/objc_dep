@@ -150,7 +150,7 @@ def print_frequencies_chart(d):
         s = "%2d | %s\n" % (i, ", ".join(sorted(list(l[i]))))
         sys.stderr.write(s)
         
-def dependencies_in_dot_format(path, exclude, ignore):
+def dependencies_in_dot_format(path, exclude, ignore, traversed):
 
     d = dependencies_in_project_with_file_extensions(path, ['.h', '.hpp', '.m', '.mm', '.c', '.cc', '.cpp'], exclude, ignore)
 
@@ -184,7 +184,7 @@ def dependencies_in_dot_format(path, exclude, ignore):
             l.append("\t\"%s\" -> {};" % (k))
         
         for k2 in deps:
-            if not ((k, k2) in two_ways_set or (k2, k) in two_ways_set):
+            if not ((k, k2) in two_ways_set or (k2, k) in two_ways_set or (traversed and k2 in untraversed_set)):
                 l.append("\t\"%s\" -> \"%s\";" % (k, k2))
 
     l.append("\t")
@@ -199,8 +199,9 @@ def dependencies_in_dot_format(path, exclude, ignore):
     for (k, k2) in two_ways_set:
         l.append("\t\"%s\" -> \"%s\";" % (k, k2))
 
-    for k in untraversed_set:
-        l.append("\t\"%s\" [color=gray, style=dashed, fontcolor=gray]" % k)
+    if not traversed:
+        for k in untraversed_set:
+            l.append("\t\"%s\" [color=gray, style=dashed, fontcolor=gray]" % k)
     
     if category_list:
         l.append("\t")
@@ -221,9 +222,11 @@ def main():
     parser.add_argument("project_path", help="path to folder hierarchy containing Objective-C files")
     parser.add_argument("-x", "--exclude", nargs='?', default='' ,help="regular expression of substrings to exclude from module names")
     parser.add_argument("-i", "--ignore", nargs='*', help="list of subfolder names to ignore")
+    parser.add_argument("-t", "--traversed", help="print only traversed files", action='store_true')
+
     args= parser.parse_args()
 
-    print dependencies_in_dot_format(args.project_path, args.exclude, args.ignore)
+    print dependencies_in_dot_format(args.project_path, args.exclude, args.ignore, args.traversed)
   
 if __name__=='__main__':
     main()
